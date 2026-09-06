@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Menu,
   Search,
@@ -8,7 +8,8 @@ import {
   HardDrive,
   CheckCircle2,
   ChevronDown,
-  Flame
+  Flame,
+  RefreshCw
 } from 'lucide-react';
 import { SessionUser, NotifikasiItem } from '../types';
 import { storage } from '../services/storage';
@@ -19,6 +20,7 @@ interface NavbarProps {
   onOpenSearch: () => void;
   onLogout: () => void;
   onNavigate: (tab: string) => void;
+  onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,10 +28,30 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
   onOpenSearch,
   onLogout,
-  onNavigate
+  onNavigate,
+  onShowToast
 }) => {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(storage.getServerSyncStatus());
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSyncStatus(storage.getServerSyncStatus());
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    const res = await storage.syncWithServer();
+    setIsSyncing(false);
+    setSyncStatus(storage.getServerSyncStatus());
+    if (onShowToast) {
+      onShowToast(res.message, res.success ? 'success' : 'info');
+    }
+  };
 
   const notifications = storage.getNotifikasi(currentUser.role, currentUser.ref_id);
   const unreadCount = notifications.filter(n => n.STATUS === 'BELUM_DIBACA').length;
@@ -90,16 +112,42 @@ export const Navbar: React.FC<NavbarProps> = ({
           </kbd>
         </button>
 
-        {/* Internal Database Active Badge */}
+        {/* Real-time Server Sync Badge (Laptop ⇄ HP) */}
         <div
           id="badge-storage-status"
-          title="Seluruh data tersimpan secara mandiri di aplikasi"
-          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium bg-white text-slate-700 border-slate-200 shadow-2xs"
+          title="Sinkronisasi otomatis antara Laptop dan HP via server pusat"
+          className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs font-medium bg-emerald-50/90 text-emerald-800 border-emerald-200 shadow-2xs"
         >
-          <HardDrive className="w-3.5 h-3.5 text-teal-600" />
-          <span className="text-xs font-medium">Data Internal Aktif</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-500" title="Penyimpanan Mandiri Aktif" />
+          <span className="relative flex h-2 w-2">
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${syncStatus.isOnline ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+            <span className={`relative inline-flex rounded-full h-2 w-2 ${syncStatus.isOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+          </span>
+          <span className="text-[11px] font-semibold">
+            {isSyncing ? 'Menyinkronkan...' : syncStatus.isOnline ? 'Sinkron Laptop ⇄ HP' : 'Mode Offline'}
+          </span>
+          <button
+            id="btn-navbar-sync"
+            type="button"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            className="p-1 hover:bg-emerald-100/80 rounded text-emerald-700 transition-all cursor-pointer"
+            title="Klik untuk sinkronisasi paksa sekarang"
+          >
+            <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
+
+        {/* Mobile Quick Sync Icon for HP / Smartphone */}
+        <button
+          id="btn-mobile-sync"
+          type="button"
+          onClick={handleManualSync}
+          disabled={isSyncing}
+          className="sm:hidden p-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md cursor-pointer"
+          title="Sinkronisasi Laptop & HP"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+        </button>
 
         {/* Notification Bell Dropdown */}
         <div className="relative">

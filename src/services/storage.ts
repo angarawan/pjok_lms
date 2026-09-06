@@ -28,6 +28,13 @@ const SESSION_STORAGE_KEY = 'lms_pjok_session_v1';
 
 class StorageService {
   private db: AppDatabase;
+  private listeners: Array<(db: AppDatabase) => void> = [];
+  private serverVersion: number = 0;
+  private lastServerSyncTime: Date | null = null;
+  private isSyncingWithServer: boolean = false;
+  private syncDebounceTimer: any = null;
+  private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  private serverInitialized: boolean = false;
 
   constructor() {
     this.db = this.loadDatabase();
@@ -35,6 +42,179 @@ class StorageService {
 
   public getDatabase(): AppDatabase {
     return this.db;
+  }
+
+  // Listener subscription for live reactive updates across Laptop & HP
+  public subscribe(callback: (db: AppDatabase) => void): () => void {
+    this.listeners.push(callback);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== callback);
+    };
+  }
+
+  public notifyListeners(): void {
+    this.listeners.forEach(cb => {
+      try {
+        cb(this.db);
+      } catch (err) {
+        console.error('[Storage] Error in listener callback:', err);
+      }
+    });
+  }
+
+  public getServerSyncStatus(): {
+    isOnline: boolean;
+    isSyncing: boolean;
+    lastSyncTime: Date | null;
+    version: number;
+  } {
+    return {
+      isOnline: this.isOnline,
+      isSyncing: this.isSyncingWithServer,
+      lastSyncTime: this.lastServerSyncTime,
+      version: this.serverVersion
+    };
+  }
+
+  // Asynchronous scheduled push to server with debounce
+  private schedulePushToServer(data: AppDatabase) {
+    if (typeof window === 'undefined') return;
+    if (this.syncDebounceTimer) {
+      clearTimeout(this.syncDebounceTimer);
+    }
+    this.syncDebounceTimer = setTimeout(() => {
+      this.pushToServer(data);
+    }, 400);
+  }
+
+  private async pushToServer(data: AppDatabase): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    try {
+      this.isSyncingWithServer = true;
+      const res = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data,
+          user: this.getCurrentUser()?.username || 'user'
+        })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          this.serverVersion = json.version;
+          this.lastServerSyncTime = new Date();
+          this.isOnline = true;
+          return true;
+        }
+      }
+    } catch (err) {
+      this.isOnline = false;
+      console.warn('[Storage] Push to server failed (using local cache):', err);
+    } finally {
+      this.isSyncingWithServer = false;
+    }
+    return false;
+  }
+
+  public async pullFromServer(): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    try {
+      this.isSyncingWithServer = true;
+      const res = await fetch('/api/db');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          this.isOnline = true;
+          this.serverVersion = json.version || 1;
+          this.lastServerSyncTime = new Date();
+
+          if (json.data && typeof json.data === 'object') {
+            // Adopt server database and merge with existing schema
+            const merged: AppDatabase = { ...INITIAL_DATABASE, ...json.data };
+            this.ensureGuruUsers(merged);
+            this.ensureMuridUsers(merged);
+            this.deduplicateDatabase(merged);
+
+            this.db = merged;
+            try {
+              localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(merged));
+            } catch (e) {
+              console.error(e);
+            }
+            this.notifyListeners();
+            return true;
+          } else {
+            // Server has no data yet, push local database to seed the server
+            await this.pushToServer(this.db);
+            return true;
+          }
+        }
+      }
+    } catch (err) {
+      this.isOnline = false;
+      console.warn('[Storage] Pull from server failed (using local cache):', err);
+    } finally {
+      this.isSyncingWithServer = false;
+    }
+    return false;
+  }
+
+  // Manual trigger for user to sync with live feedback
+  public async syncWithServer(): Promise<{ success: boolean; message: string }> {
+    const pulled = await this.pullFromServer();
+    if (pulled) {
+      return { success: true, message: 'Data berhasil disinkronkan dengan server pusat!' };
+    }
+    const pushed = await this.pushToServer(this.db);
+    if (pushed) {
+      return { success: true, message: 'Data berhasil diunggah dan disinkronkan ke server!' };
+    }
+    return { success: false, message: 'Gagal terhubung ke server. Menggunakan data lokal (offline).' };
+  }
+
+  // Background auto-sync initialization across Laptop & HP
+  public async initServerSync(): Promise<void> {
+    if (typeof window === 'undefined' || this.serverInitialized) return;
+    this.serverInitialized = true;
+
+    // 1. Initial pull on boot
+    await this.pullFromServer();
+
+    // 2. Poll server every 3.5s to detect updates from other devices (e.g. Teacher on laptop -> Student on phone)
+    setInterval(async () => {
+      try {
+        const res = await fetch('/api/db/version');
+        if (res.ok) {
+          const info = await res.json();
+          this.isOnline = true;
+          if (info.hasData && info.version > this.serverVersion) {
+            await this.pullFromServer();
+          } else if (!info.hasData && this.db) {
+            await this.pushToServer(this.db);
+          }
+        }
+      } catch (e) {
+        this.isOnline = false;
+      }
+    }, 3500);
+
+    // 3. Immediately pull when tab becomes visible (user switches back to the app on phone or laptop)
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.pullFromServer();
+      }
+    });
+
+    window.addEventListener('online', () => {
+      this.isOnline = true;
+      this.pullFromServer();
+    });
+
+    window.addEventListener('offline', () => {
+      this.isOnline = false;
+    });
   }
 
   private ensureGuruUsers(data: AppDatabase): boolean {
@@ -230,6 +410,8 @@ class StorageService {
     } catch (e) {
       console.error('Failed to save to local storage:', e);
     }
+    this.notifyListeners();
+    this.schedulePushToServer(data);
   }
 
   public resetToDefault(): AppDatabase {
@@ -1792,3 +1974,7 @@ class StorageService {
 }
 
 export const storage = new StorageService();
+
+if (typeof window !== 'undefined') {
+  storage.initServerSync();
+}

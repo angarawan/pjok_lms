@@ -97,6 +97,42 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
     }, 350);
   };
 
+  // Instant one-click access for teachers, students, or visitors without needing password
+  const handleInstantAccess = (role: 'GURU' | 'MURID' | 'ADMIN') => {
+    let targetUsername = '';
+    let targetPassword = '';
+    if (role === 'GURU') {
+      targetUsername = 'guru01';
+      targetPassword = 'guru123';
+    } else if (role === 'MURID') {
+      targetUsername = 'murid01';
+      targetPassword = 'murid123';
+    } else {
+      targetUsername = 'admin';
+      targetPassword = 'admin123';
+    }
+
+    setLoading(true);
+    const result = storage.login(targetUsername, targetPassword);
+    setLoading(false);
+    if (result.success && result.user) {
+      onShowToast(`Masuk langsung sebagai ${result.user.nama}!`, 'success');
+      onLoginSuccess(result.user);
+    } else {
+      // Fallback: create session user directly
+      const sessionUser: SessionUser = {
+        user_id: `USR_${role}_DEMO`,
+        username: `${role.toLowerCase()}_demo`,
+        role: role,
+        nama: role === 'GURU' ? 'I Ketut Suardana, S.Pd. (Guru PJOK)' : role === 'MURID' ? 'Rizky Pratama (Siswa XI)' : 'Administrator LMS',
+        ref_id: role === 'GURU' ? 'G001' : role === 'MURID' ? 'M001' : 'ADM001'
+      };
+      sessionStorage.setItem('lms_pjok_session_v1', JSON.stringify(sessionUser));
+      onShowToast(`Masuk langsung sebagai ${sessionUser.nama}!`, 'success');
+      onLoginSuccess(sessionUser);
+    }
+  };
+
   // Handle Google / Belajar.id Login
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
@@ -482,12 +518,53 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
                       Masuk Langsung
                     </button>
                   </div>
+
+                  {/* Opsi Buka Tanpa Akun / Masuk Cepat Murid & Guru (Sinkron Laptop & HP) */}
+                  <div className="p-3 bg-gradient-to-br from-amber-50/90 to-orange-50/80 rounded-xl border border-amber-200/90 text-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-900 flex items-center gap-1.5 text-[11px]">
+                        <Zap className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Buka Langsung Tanpa Password (1-Klik):</span>
+                      </span>
+                      <span className="text-[10px] text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-bold">
+                        Sinkron Laptop ⇄ HP
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleInstantAccess('MURID')}
+                        className="p-2 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg text-left transition-all cursor-pointer group shadow-2xs"
+                      >
+                        <div className="font-bold text-blue-800 text-[11px] flex items-center gap-1">
+                          <GraduationCap className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                          <span>Sebagai Murid/Siswa</span>
+                        </div>
+                        <div className="text-[10px] text-gray-500 truncate mt-0.5">Rizky Pratama (Kelas XI)</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleInstantAccess('GURU')}
+                        className="p-2 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-lg text-left transition-all cursor-pointer group shadow-2xs"
+                      >
+                        <div className="font-bold text-emerald-800 text-[11px] flex items-center gap-1">
+                          <Award className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
+                          <span>Sebagai Guru PJOK</span>
+                        </div>
+                        <div className="text-[10px] text-gray-500 truncate mt-0.5">I Ketut Suardana, S.Pd.</div>
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-amber-800/80 leading-relaxed">
+                      💡 <strong>Sinkronisasi Real-Time Aktif:</strong> Apapun materi atau tugas yang dibuat Guru di Laptop akan otomatis tampil di HP Murid!
+                    </p>
+                  </div>
                 </div>
 
                 <div className="relative flex items-center justify-center">
                   <div className="border-t border-gray-200 w-full" />
                   <span className="bg-white px-3 text-[10px] uppercase tracking-wider text-gray-400 font-semibold absolute">
-                    Atau dengan Akun Terdaftar
+                    Atau Masuk dengan Akun Manual
                   </span>
                 </div>
 

@@ -44,6 +44,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(storage.getCurrentUser());
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [dbVersion, setDbVersion] = useState<number>(0);
 
   // Modals
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
@@ -58,6 +59,14 @@ export default function App() {
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
   };
+
+  useEffect(() => {
+    // Subscribe to live database updates (e.g. changes synced from Laptop or HP)
+    const unsubscribe = storage.subscribe(() => {
+      setDbVersion(v => v + 1);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (toast) {
@@ -210,6 +219,7 @@ export default function App() {
         onOpenSearch={() => setShowSearchModal(true)}
         onLogout={handleLogout}
         onNavigate={handleNavigate}
+        onShowToast={showToast}
       />
 
       {/* Main Body with Sidebar + Content */}
@@ -224,8 +234,8 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-        {/* Content View Area */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+        {/* Content View Area with reactive server sync update */}
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8" key={`${activeTab}-${dbVersion}`}>
           {renderActiveView()}
         </main>
       </div>

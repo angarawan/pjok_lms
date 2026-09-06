@@ -15,7 +15,11 @@ import {
   Info,
   CheckCircle2,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Globe,
+  Copy,
+  Zap,
+  Check
 } from 'lucide-react';
 import { storage } from '../services/storage';
 import { SessionUser } from '../types';
@@ -40,6 +44,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [unauthorizedDomainInfo, setUnauthorizedDomainInfo] = useState<{ isUnauthorized: boolean; hostname: string } | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showBelajarIdModal, setShowBelajarIdModal] = useState(false);
@@ -125,9 +131,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
       const isPopupBlocked = err?.code === 'auth/popup-blocked' || err?.message?.includes('popup');
 
       if (isUnauthorizedDomain) {
-        setShowBelajarIdModal(true);
-        setErrorMsg('Domain Cloud Run belum terdaftar di Firebase Authorized Domains. Membuka dialog Masuk Akun Belajar.id langsung di bawah.');
-        onShowToast('Domain belum diotorisasi Firebase. Silakan konfirmasi akun Belajar.id Anda untuk masuk.', 'info');
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'run.app';
+        setUnauthorizedDomainInfo({ isUnauthorized: true, hostname: host });
+        setErrorMsg(`Domain ${host} belum terdaftar di Firebase Authorized Domains.`);
+        onShowToast('Domain belum diotorisasi di Firebase. Gunakan tombol masuk langsung di bawah.', 'info');
       } else if (isPopupBlocked) {
         setErrorMsg('Pop-up Google diblokir browser. Buka aplikasi di tab baru atau klik "Masuk Instan via Akun Belajar.id" di bawah.');
       } else if (err?.code === 'auth/cancelled-popup-request' || err?.code === 'auth/popup-closed-by-user') {
@@ -317,10 +324,100 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
               </h2>
             </div>
 
-            {errorMsg && (
+            {errorMsg && !unauthorizedDomainInfo && (
               <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5 animate-in fade-in">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
                 <span className="leading-snug">{errorMsg}</span>
+              </div>
+            )}
+
+            {unauthorizedDomainInfo && (
+              <div className="p-4 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-900 text-xs space-y-3 animate-in fade-in">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 font-bold text-amber-950">
+                    <Globe className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Domain Cloud Run Belum Masuk Authorized Domains Firebase</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUnauthorizedDomainInfo(null);
+                      setErrorMsg('');
+                    }}
+                    className="text-amber-500 hover:text-amber-800 text-lg leading-none cursor-pointer"
+                  >
+                    &times;
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Firebase menolak pop-up login karena domain Cloud Run saat ini (<strong>{unauthorizedDomainInfo.hostname}</strong>) belum didaftarkan di <em>Authorized domains</em> proyek Firebase (<code className="bg-amber-100/80 px-1 py-0.5 rounded font-mono">alpine-freedom-485514-j6</code>).
+                </p>
+
+                {/* Solusi 1: Masuk Instan */}
+                <div className="p-3 bg-white rounded-lg border border-amber-200 space-y-2 shadow-2xs">
+                  <span className="font-bold text-xs text-gray-800 flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Solusi Instan: Masuk Seketika Tanpa Kendala Domain</span>
+                  </span>
+                  <p className="text-[11px] text-gray-600">
+                    Gunakan akun Belajar.id Anda untuk langsung masuk ke dashboard LMS PJOK:
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleBelajarIdLogin('i5123@guru.sma.belajar.id', 'Guru PJOK (i5123)')}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Masuk sebagai i5123@guru.sma.belajar.id</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowBelajarIdModal(true)}
+                      className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-semibold text-xs cursor-pointer transition-colors"
+                    >
+                      Pilih Akun Lainnya
+                    </button>
+                  </div>
+                </div>
+
+                {/* Solusi 2: Tambahkan Domain ke Firebase Console */}
+                <div className="p-3 bg-white/80 rounded-lg border border-amber-200/80 space-y-2 text-[11px]">
+                  <span className="font-bold text-gray-800 block">
+                    🛠️ Solusi Permanen Firebase Console (Bagi Administrator):
+                  </span>
+                  <p className="text-gray-600">
+                    Tambahkan domain ini ke Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains:
+                  </p>
+                  <div className="flex items-center gap-2 bg-amber-50 p-2 rounded-lg border border-amber-200 font-mono text-[11px]">
+                    <span className="flex-1 truncate select-all">{unauthorizedDomainInfo.hostname}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(unauthorizedDomainInfo.hostname);
+                        setCopiedDomain(true);
+                        onShowToast('Domain berhasil disalin ke clipboard!', 'success');
+                        setTimeout(() => setCopiedDomain(false), 2500);
+                      }}
+                      className="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded font-sans font-semibold text-[10px] shrink-0 cursor-pointer flex items-center gap-1 transition-colors"
+                    >
+                      {copiedDomain ? <Check className="w-3 h-3 text-emerald-700" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedDomain ? 'Disalin!' : 'Salin Domain'}</span>
+                    </button>
+                  </div>
+                  <div className="pt-0.5">
+                    <a
+                      href="https://console.firebase.google.com/project/alpine-freedom-485514-j6/authentication/settings"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold"
+                    >
+                      <span>Buka Firebase Console Settings</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -371,6 +468,20 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
                     <Award className="w-3.5 h-3.5 text-blue-600" />
                     <span>Masuk Instan via Akun Belajar.id (@guru / @siswa)</span>
                   </button>
+
+                  <div className="flex items-center justify-between px-2.5 py-1.5 bg-emerald-50/80 border border-emerald-200 rounded-lg text-[11px]">
+                    <span className="text-emerald-900 font-medium truncate flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                      <span>Akun: <strong>i5123@guru.sma.belajar.id</strong></span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleBelajarIdLogin('i5123@guru.sma.belajar.id', 'Guru PJOK (i5123)')}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-bold text-[10px] cursor-pointer shrink-0 transition-colors shadow-2xs"
+                    >
+                      Masuk Langsung
+                    </button>
+                  </div>
                 </div>
 
                 <div className="relative flex items-center justify-center">

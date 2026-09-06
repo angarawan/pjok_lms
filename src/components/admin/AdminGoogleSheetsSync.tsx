@@ -1186,6 +1186,17 @@ function getSheetDataAsJson(sheet) {
                     Salin Domain
                   </button>
                 </div>
+                <div className="pt-1">
+                  <a
+                    href="https://console.firebase.google.com/project/alpine-freedom-485514-j6/authentication/settings"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold text-[11px]"
+                  >
+                    <span>Buka Firebase Console Settings (alpine-freedom-485514-j6)</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
             </div>
 

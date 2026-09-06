@@ -212,7 +212,7 @@ export const TugasManager: React.FC<TugasManagerProps> = ({ currentUser, onShowT
             Tidak ada penugasan saat ini.
           </div>
         ) : (
-          filteredTugas.map((t) => {
+          filteredTugas.map((t, idx) => {
             const submissionsForTask = pengumpulanList.filter(p => p.TUGAS_ID === t.TUGAS_ID);
             const mySubmission = pengumpulanList.find(
               p => p.TUGAS_ID === t.TUGAS_ID && p.MURID_ID === currentUser.ref_id
@@ -220,7 +220,7 @@ export const TugasManager: React.FC<TugasManagerProps> = ({ currentUser, onShowT
 
             return (
               <div
-                key={t.TUGAS_ID}
+                key={`tugas-card-${t.TUGAS_ID || 'tug'}-${idx}`}
                 className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden"
               >
                 <div className="p-5 space-y-3">
@@ -543,8 +543,8 @@ export const TugasManager: React.FC<TugasManagerProps> = ({ currentUser, onShowT
                   ) : (
                     pengumpulanList
                       .filter(p => p.TUGAS_ID === selectedTugas.TUGAS_ID)
-                      .map((sub) => (
-                        <tr key={sub.PENGUMPULAN_ID} className="hover:bg-slate-50">
+                      .map((sub, sIdx) => (
+                        <tr key={`sub-row-${sub.PENGUMPULAN_ID || 'sub'}-${sIdx}`} className="hover:bg-slate-50">
                           <td className="py-3 px-3 font-bold text-slate-800">{sub.NAMA_MURID}</td>
                           <td className="py-3 px-3 font-mono text-slate-500 text-[11px]">{sub.WAKTU_KUMPUL}</td>
                           <td className="py-3 px-3">

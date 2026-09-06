@@ -154,7 +154,8 @@ class StorageService {
 
         const guruSynced = this.ensureGuruUsers(merged);
         const muridSynced = this.ensureMuridUsers(merged);
-        if (guruSynced || muridSynced) {
+        const deduplicated = this.deduplicateDatabase(merged);
+        if (guruSynced || muridSynced || deduplicated) {
           this.saveToDisk(merged);
         }
 
@@ -166,8 +167,60 @@ class StorageService {
     const fresh = JSON.parse(JSON.stringify(INITIAL_DATABASE));
     this.ensureGuruUsers(fresh);
     this.ensureMuridUsers(fresh);
+    this.deduplicateDatabase(fresh);
     this.saveToDisk(fresh);
     return fresh;
+  }
+
+  private deduplicateDatabase(db: AppDatabase): boolean {
+    let changed = false;
+    const tableIdKeys: Record<string, string> = {
+      '02_USERS': 'USER_ID',
+      '03_ADMIN': 'ADMIN_ID',
+      '04_GURU': 'GURU_ID',
+      '05_MURID': 'MURID_ID',
+      '06_KELAS': 'KELAS_ID',
+      '07_MAPEL': 'MAPEL_ID',
+      '08_ROMBEL': 'ROMBEL_ID',
+      '09_TAHUN_AJARAN': 'TAHUN_ID',
+      '10_MATERI': 'MATERI_ID',
+      '11_TUGAS': 'TUGAS_ID',
+      '12_PENGUMPULAN_TUGAS': 'PENGUMPULAN_ID',
+      '13_BANK_SOAL': 'SOAL_ID',
+      '14_JAWABAN_QUIZ': 'JAWABAN_ID',
+      '15_PRESENSI': 'PRESENSI_ID',
+      '16_NILAI': 'NILAI_ID',
+      '17_JURNAL': 'JURNAL_ID',
+      '18_EKSTRAKURIKULER': 'EKSKUL_ID',
+      '19_LOG_AKTIVITAS': 'LOG_ID'
+    };
+
+    for (const [tableName, idKey] of Object.entries(tableIdKeys)) {
+      const arr = (db as any)[tableName];
+      if (Array.isArray(arr)) {
+        const seen = new Set<string>();
+        const uniqueArr: any[] = [];
+        for (const item of arr) {
+          const val = item && item[idKey];
+          if (val) {
+            const keyStr = String(val).trim();
+            if (!seen.has(keyStr)) {
+              seen.add(keyStr);
+              uniqueArr.push(item);
+            } else {
+              changed = true;
+            }
+          } else {
+            uniqueArr.push(item);
+          }
+        }
+        if (uniqueArr.length !== arr.length) {
+          (db as any)[tableName] = uniqueArr;
+          changed = true;
+        }
+      }
+    }
+    return changed;
   }
 
   private saveToDisk(data: AppDatabase) {

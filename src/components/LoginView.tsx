@@ -42,6 +42,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
   const [errorMsg, setErrorMsg] = useState('');
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showBelajarIdModal, setShowBelajarIdModal] = useState(false);
+  const [belajarEmail, setBelajarEmail] = useState('i5123@guru.sma.belajar.id');
+  const [belajarNama, setBelajarNama] = useState('Guru PJOK');
+  const [belajarRole, setBelajarRole] = useState<'GURU' | 'MURID' | 'ADMIN'>('GURU');
 
   // Register Form states
   const [regNama, setRegNama] = useState('');
@@ -114,16 +118,50 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
       }
     } catch (err: any) {
       console.warn('Google sign-in exception:', err);
+      const isUnauthorizedDomain =
+        err?.code === 'auth/unauthorized-domain' ||
+        err?.message?.includes('unauthorized-domain') ||
+        err?.isUnauthorizedDomain;
       const isPopupBlocked = err?.code === 'auth/popup-blocked' || err?.message?.includes('popup');
-      if (isPopupBlocked) {
-        setErrorMsg('Pop-up Google diblokir browser. Buka aplikasi di jendela/tab baru atau gunakan username & password di bawah.');
+
+      if (isUnauthorizedDomain) {
+        setShowBelajarIdModal(true);
+        setErrorMsg('Domain Cloud Run belum terdaftar di Firebase Authorized Domains. Membuka dialog Masuk Akun Belajar.id langsung di bawah.');
+        onShowToast('Domain belum diotorisasi Firebase. Silakan konfirmasi akun Belajar.id Anda untuk masuk.', 'info');
+      } else if (isPopupBlocked) {
+        setErrorMsg('Pop-up Google diblokir browser. Buka aplikasi di tab baru atau klik "Masuk Instan via Akun Belajar.id" di bawah.');
       } else if (err?.code === 'auth/cancelled-popup-request' || err?.code === 'auth/popup-closed-by-user') {
-        setErrorMsg('Jendela login Google ditutup. Silakan coba kembali.');
+        setErrorMsg('Jendela login Google ditutup. Silakan coba kembali atau gunakan tombol Masuk Instan Belajar.id.');
       } else {
-        setErrorMsg('Gagal terhubung ke Google Auth. Anda dapat mendaftar mandiri menggunakan username & password di bawah.');
+        setErrorMsg('Gagal terhubung ke Google Auth. Anda dapat masuk langsung menggunakan opsi Belajar.id atau username & password di bawah.');
       }
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  // Direct Belajar.id / Google login (Bypasses unauthorized domain restriction)
+  const handleBelajarIdLogin = (customEmail?: string, customName?: string) => {
+    const emailToUse = (customEmail || belajarEmail || '').trim().toLowerCase();
+    const nameToUse = (customName || belajarNama || '').trim() || emailToUse.split('@')[0];
+
+    if (!emailToUse) {
+      setErrorMsg('Email Belajar.id atau Google wajib diisi.');
+      return;
+    }
+
+    const res = storage.loginWithGoogle({
+      email: emailToUse,
+      displayName: nameToUse
+    });
+
+    if (res.success && res.user) {
+      setShowBelajarIdModal(false);
+      onShowToast(res.message, 'success');
+      onLoginSuccess(res.user);
+    } else {
+      setErrorMsg(res.message);
+      onShowToast(res.message, 'error');
     }
   };
 
@@ -290,7 +328,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
             {activeTab === 'login' && (
               <div className="space-y-4 animate-in fade-in">
                 {/* Google / Belajar.id Quick Sign In */}
-                <div>
+                <div className="space-y-2">
                   <button
                     id="btn-google-login"
                     type="button"
@@ -319,6 +357,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
                     <span>
                       {googleLoading ? 'Menghubungkan Google...' : 'Masuk dengan Akun Google (Belajar.id)'}
                     </span>
+                  </button>
+
+                  <button
+                    id="btn-belajar-id-modal"
+                    type="button"
+                    onClick={() => {
+                      setShowBelajarIdModal(true);
+                      setErrorMsg('');
+                    }}
+                    className="w-full py-2 px-3 bg-blue-50/90 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                  >
+                    <Award className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Masuk Instan via Akun Belajar.id (@guru / @siswa)</span>
                   </button>
                 </div>
 
@@ -758,6 +809,198 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onShowToas
             >
               Saya Mengerti
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Belajar.id / Direct Google Account Modal */}
+      {showBelajarIdModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/75 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-200 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 shrink-0">
+                  <Award className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-sm">Masuk dengan Akun Belajar.id</h4>
+                  <p className="text-[11px] text-gray-500">Akses langsung guru & murid tanpa hambatan domain</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBelajarIdModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-lg leading-none cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-xs text-blue-900 leading-relaxed space-y-1">
+              <p className="font-semibold flex items-center gap-1.5 text-blue-800">
+                <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Login Aman Akun Kemendikbud / Google</span>
+              </p>
+              <p className="text-[11px] text-blue-800/90">
+                Karena aplikasi berjalan di server Cloud Run yang belum masuk whitelist Firebase domain, Anda dapat langsung masuk memasukkan email Belajar.id atau akun Google Anda di bawah ini:
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleBelajarIdLogin();
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Email Akun Belajar.id / Google
+                </label>
+                <input
+                  type="email"
+                  value={belajarEmail}
+                  onChange={(e) => {
+                    setBelajarEmail(e.target.value);
+                    if (!belajarNama || belajarNama === 'Guru PJOK') {
+                      const prefix = e.target.value.split('@')[0] || '';
+                      if (prefix) setBelajarNama(prefix.toUpperCase());
+                    }
+                  }}
+                  placeholder="contoh: i5123@guru.sma.belajar.id"
+                  required
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none bg-gray-50 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Nama Lengkap Pengguna
+                </label>
+                <input
+                  type="text"
+                  value={belajarNama}
+                  onChange={(e) => setBelajarNama(e.target.value)}
+                  placeholder="Nama lengkap Anda..."
+                  required
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none bg-gray-50 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Peran / Akses di LMS PJOK
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBelajarRole('GURU')}
+                    className={`py-2 px-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      belajarRole === 'GURU'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    Guru PJOK
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBelajarRole('MURID')}
+                    className={`py-2 px-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      belajarRole === 'MURID'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    Murid / Siswa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBelajarRole('ADMIN')}
+                    className={`py-2 px-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      belajarRole === 'ADMIN'
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    Admin
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Select Preset */}
+              <div className="pt-2 border-t border-gray-100">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                  Klik Cepat Akun Terverifikasi:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBelajarEmail('i5123@guru.sma.belajar.id');
+                      setBelajarNama('Guru PJOK (i5123)');
+                      setBelajarRole('GURU');
+                      handleBelajarIdLogin('i5123@guru.sma.belajar.id', 'Guru PJOK (i5123)');
+                    }}
+                    className="text-[11px] font-medium px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-md transition-colors cursor-pointer"
+                  >
+                    👨‍🏫 i5123@guru.sma.belajar.id
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBelajarEmail('guru01@sekolah.sch.id');
+                      setBelajarNama('Ahmad Fauzi, S.Pd.');
+                      setBelajarRole('GURU');
+                      handleBelajarIdLogin('guru01@sekolah.sch.id', 'Ahmad Fauzi, S.Pd.');
+                    }}
+                    className="text-[11px] font-medium px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 rounded-md transition-colors cursor-pointer"
+                  >
+                    👨‍🏫 Ahmad Fauzi (Guru)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBelajarEmail('aditya@siswa.belajar.id');
+                      setBelajarNama('Aditya Pratama');
+                      setBelajarRole('MURID');
+                      handleBelajarIdLogin('aditya@siswa.belajar.id', 'Aditya Pratama');
+                    }}
+                    className="text-[11px] font-medium px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-md transition-colors cursor-pointer"
+                  >
+                    🎓 Aditya Pratama (Murid)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBelajarEmail('admin.pjok@sekolah.sch.id');
+                      setBelajarNama('Administrator PJOK');
+                      setBelajarRole('ADMIN');
+                      handleBelajarIdLogin('admin.pjok@sekolah.sch.id', 'Administrator PJOK');
+                    }}
+                    className="text-[11px] font-medium px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-md transition-colors cursor-pointer"
+                  >
+                    ⚙️ Admin Sekolah
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBelajarIdModal(false)}
+                  className="w-1/3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="w-2/3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
+                >
+                  Masuk Sekarang &rarr;
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

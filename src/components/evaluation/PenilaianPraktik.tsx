@@ -507,7 +507,7 @@ export const PenilaianPraktik: React.FC<PenilaianPraktikProps> = ({ currentUser,
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
               {teknikList.map((tech, index) => (
                 <div
-                  key={tech.id}
+                  key={`tech-def-${tech.id}-${index}`}
                   className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2"
                 >
                   <span className="w-5 h-5 rounded-md bg-teal-100 text-teal-800 font-black text-[11px] flex items-center justify-center shrink-0">
@@ -598,7 +598,7 @@ export const PenilaianPraktik: React.FC<PenilaianPraktikProps> = ({ currentUser,
 
                   return (
                     <div
-                      key={student.MURID_ID}
+                      key={`student-card-${student.MURID_ID}-${idx}`}
                       className="p-4 bg-white hover:bg-slate-50/70 rounded-2xl border border-slate-200 shadow-2xs space-y-3 transition-all"
                     >
                       {/* Student Card Header */}
@@ -654,7 +654,7 @@ export const PenilaianPraktik: React.FC<PenilaianPraktikProps> = ({ currentUser,
                           const currentSkor = getStudentTeknikScore(student.MURID_ID, tech.id);
                           return (
                             <div
-                              key={tech.id}
+                              key={`tech-score-${student.MURID_ID}-${tech.id}-${tIdx}`}
                               className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between gap-2"
                             >
                               <div className="truncate flex-1">
@@ -762,8 +762,8 @@ export const PenilaianPraktik: React.FC<PenilaianPraktikProps> = ({ currentUser,
                   </td>
                 </tr>
               ) : (
-                penilaianList.map((p) => (
-                  <tr key={p.NILAI_ID} className="hover:bg-slate-50">
+                penilaianList.map((p, idx) => (
+                  <tr key={`nilai-row-${p.NILAI_ID}-${idx}`} className="hover:bg-slate-50">
                     <td className="py-3 px-4 font-bold text-slate-800">{p.NAMA_MURID}</td>
                     <td className="py-3 px-4 font-semibold text-slate-600">{p.KELAS_ID}</td>
                     <td className="py-3 px-4 text-teal-800 font-bold">{p.MATERI}</td>

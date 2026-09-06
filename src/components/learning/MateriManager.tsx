@@ -229,9 +229,9 @@ export const MateriManager: React.FC<MateriManagerProps> = ({ currentUser, onSho
             Belum ada materi pembelajaran yang cocok.
           </div>
         ) : (
-          filteredMateri.map((m) => (
+          filteredMateri.map((m, idx) => (
             <div
-              key={m.MATERI_ID}
+              key={`materi-card-${m.MATERI_ID || 'mat'}-${idx}`}
               className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
             >
               <div className="p-5 space-y-3">

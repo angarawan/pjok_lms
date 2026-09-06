@@ -75,10 +75,27 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
     console.error('Google Sign In Error:', error);
+    if (error?.code === 'auth/unauthorized-domain' || error?.message?.includes('unauthorized-domain')) {
+      error.isUnauthorizedDomain = true;
+      error.unauthorizedHostname = window.location.hostname;
+    }
     throw error;
   } finally {
     isSigningIn = false;
   }
+};
+
+export const setManualGoogleSession = (email: string, displayName: string = ''): { user: any; accessToken: string } => {
+  const pseudoUser: any = {
+    email,
+    displayName: displayName || email.split('@')[0],
+    photoURL: null,
+    uid: 'manual_' + email.replace(/[^a-zA-Z0-9]/g, '_')
+  };
+  cachedUser = pseudoUser;
+  cachedAccessToken = 'session_' + Date.now();
+  listeners.forEach(l => l.success?.(pseudoUser, cachedAccessToken!));
+  return { user: pseudoUser, accessToken: cachedAccessToken };
 };
 
 export const getAccessToken = async (): Promise<string | null> => {

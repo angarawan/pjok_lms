@@ -125,8 +125,8 @@ export const AdminAkademik: React.FC<AdminAkademikProps> = ({ onShowToast }) => 
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {kelasList.map((k) => (
-                  <tr key={k.KELAS_ID} className="hover:bg-slate-50/80 transition-colors">
+                {kelasList.map((k, idx) => (
+                  <tr key={`kelas-row-${k.KELAS_ID || 'k'}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-teal-800 bg-teal-50/40">{k.KELAS_ID}</td>
                     <td className="py-3.5 px-4 font-bold text-slate-700">{k.TINGKAT}</td>
                     <td className="py-3.5 px-4 font-bold text-slate-800">{k.NAMA_KELAS}</td>
@@ -172,8 +172,8 @@ export const AdminAkademik: React.FC<AdminAkademikProps> = ({ onShowToast }) => 
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {mapelList.map((m) => (
-                  <tr key={m.MAPEL_ID} className="hover:bg-slate-50/80 transition-colors">
+                {mapelList.map((m, idx) => (
+                  <tr key={`mapel-row-${m.MAPEL_ID || 'm'}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-teal-800">{m.MAPEL_ID}</td>
                     <td className="py-3.5 px-4 font-bold text-slate-800">{m.NAMA_MAPEL}</td>
                     <td className="py-3.5 px-4">

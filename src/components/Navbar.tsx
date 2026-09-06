@@ -142,9 +142,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                     Tidak ada notifikasi saat ini.
                   </div>
                 ) : (
-                  notifications.map((n: NotifikasiItem) => (
+                  notifications.map((n: NotifikasiItem, idx: number) => (
                     <div
-                      key={n.NOTIFIKASI_ID}
+                      key={`notif-${n.NOTIFIKASI_ID || 'ntf'}-${idx}`}
                       onClick={() => {
                         storage.markNotificationAsRead(n.NOTIFIKASI_ID);
                         if (n.LINK) onNavigate(n.LINK);

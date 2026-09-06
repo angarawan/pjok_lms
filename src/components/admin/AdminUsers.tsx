@@ -210,7 +210,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ onShowToast }) => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => {
+                filteredUsers.map((u, idx) => {
                   const roleBadgeClass =
                     u.ROLE === 'ADMIN'
                       ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
@@ -219,7 +219,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ onShowToast }) => {
                       : 'bg-emerald-50 text-emerald-700 border-emerald-200';
 
                   return (
-                    <tr key={u.USER_ID} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={`user-row-${u.USER_ID || 'u'}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-500">{u.USER_ID}</td>
                       <td className="py-3.5 px-4 font-bold text-slate-800">{u.NAMA}</td>
                       <td className="py-3.5 px-4 font-mono text-slate-600">@{u.USERNAME}</td>

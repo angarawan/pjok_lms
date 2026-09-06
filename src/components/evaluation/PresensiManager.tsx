@@ -139,8 +139,8 @@ export const PresensiManager: React.FC<PresensiManagerProps> = ({ currentUser, o
                   </td>
                 </tr>
               ) : (
-                myPresensiList.map(p => (
-                  <tr key={p.PRESENSI_ID}>
+                myPresensiList.map((p, idx) => (
+                  <tr key={`pres-history-${p.PRESENSI_ID || 'pres'}-${idx}`}>
                     <td className="py-3 px-4 font-mono font-bold">{p.TANGGAL}</td>
                     <td className="py-3 px-4">{p.KELAS_ID}</td>
                     <td className="py-3 px-4 text-center">
@@ -247,7 +247,7 @@ export const PresensiManager: React.FC<PresensiManagerProps> = ({ currentUser, o
                 classStudents.map((s, idx) => {
                   const status = presensiMap[s.MURID_ID] || 'HADIR';
                   return (
-                    <tr key={s.MURID_ID} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={`pres-student-${s.MURID_ID || 'mrd'}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3.5 px-4 font-mono text-slate-400">{idx + 1}</td>
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-600">{s.NIS}</td>
                       <td className="py-3.5 px-4 font-bold text-slate-800">{s.NAMA_MURID}</td>

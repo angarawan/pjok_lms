@@ -80,7 +80,11 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
         }
       }
     } catch (e: any) {
-      onShowToast(e.message || 'Gagal menghubungkan akun Google.', 'error');
+      if (e?.code === 'auth/unauthorized-domain' || e?.message?.includes('unauthorized-domain') || e?.isUnauthorizedDomain) {
+        onShowToast(`Domain ${window.location.hostname} belum diizinkan di Firebase. Gunakan tab Google Apps Script untuk sinkronisasi tanpa batas domain.`, 'error');
+      } else {
+        onShowToast(e.message || 'Gagal menghubungkan akun Google.', 'error');
+      }
     } finally {
       setIsProcessing(false);
       setStatusMsg('');
@@ -462,9 +466,9 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
               </div>
             ) : (
               <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
-                {driveFiles.map(file => (
+                {driveFiles.map((file, fIdx) => (
                   <div
-                    key={file.id}
+                    key={`drive-modal-file-${file.id || 'f'}-${fIdx}`}
                     className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
                       file.id === spreadsheetId
                         ? 'bg-emerald-50 border-emerald-300'

@@ -342,8 +342,8 @@ export const AppsScriptModal: React.FC<AppsScriptModalProps> = ({ isOpen, onClos
                           </button>
                         </div>
                         <div className="text-[11px] text-slate-500 flex flex-wrap gap-1">
-                          {headers.map(h => (
-                            <span key={h} className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono text-[10px]">
+                          {headers.map((h, hIdx) => (
+                            <span key={`hdr-${sheetName}-${h}-${hIdx}`} className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono text-[10px]">
                               {h}
                             </span>
                           ))}

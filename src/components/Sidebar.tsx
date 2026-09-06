@@ -207,18 +207,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Scrollable Nav Items */}
         <nav className="flex-1 overflow-y-auto py-5 px-3 space-y-6">
           {menuGroups.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-1">
+            <div key={`group-${group.groupTitle || gIdx}`} className="space-y-1">
               {group.groupTitle && (
                 <div className="px-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
                   {group.groupTitle}
                 </div>
               )}
-              {group.items.map((item) => {
+              {group.items.map((item, iIdx) => {
                 const IconComponent = item.icon;
                 const isActive = activeTab === item.id;
                 return (
                   <button
-                    key={item.id}
+                    key={`menu-${item.id}-${iIdx}`}
                     id={`menu-${item.id}`}
                     onClick={() => {
                       onSelectTab(item.id);

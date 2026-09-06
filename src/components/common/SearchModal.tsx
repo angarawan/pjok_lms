@@ -61,9 +61,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
             </div>
           ) : (
             <>
-              {filteredMateri.map((m) => (
+              {filteredMateri.map((m, idx) => (
                 <div
-                  key={m.MATERI_ID}
+                  key={`materi-${m.MATERI_ID || 'mat'}-${idx}`}
                   onClick={() => handleSelect('materi')}
                   className="py-2.5 px-3 hover:bg-gray-50 rounded-md cursor-pointer flex items-center justify-between group transition-colors"
                 >
@@ -78,9 +78,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
                 </div>
               ))}
 
-              {filteredTugas.map((t) => (
+              {filteredTugas.map((t, idx) => (
                 <div
-                  key={t.TUGAS_ID}
+                  key={`tugas-${t.TUGAS_ID || 'tug'}-${idx}`}
                   onClick={() => handleSelect('tugas')}
                   className="py-2.5 px-3 hover:bg-gray-50 rounded-md cursor-pointer flex items-center justify-between group transition-colors"
                 >
@@ -95,9 +95,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
                 </div>
               ))}
 
-              {filteredMurid.map((s) => (
+              {filteredMurid.map((s, idx) => (
                 <div
-                  key={s.MURID_ID}
+                  key={`murid-${s.MURID_ID || 'mrd'}-${idx}`}
                   onClick={() => handleSelect('murid')}
                   className="py-2.5 px-3 hover:bg-gray-50 rounded-md cursor-pointer flex items-center justify-between group transition-colors"
                 >

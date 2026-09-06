@@ -135,9 +135,9 @@ export const JurnalMengajar: React.FC<JurnalMengajarProps> = ({ currentUser, onS
             Belum ada catatan jurnal mengajar.
           </div>
         ) : (
-          jurnals.map((j) => (
+          jurnals.map((j, idx) => (
             <div
-              key={j.JURNAL_ID}
+              key={`jurnal-card-${j.JURNAL_ID || 'jur'}-${idx}`}
               className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
             >
               <div className="space-y-3">

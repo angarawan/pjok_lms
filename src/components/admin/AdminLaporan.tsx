@@ -167,7 +167,7 @@ export const AdminLaporan: React.FC<AdminLaporanProps> = ({ onShowToast }) => {
                   </tr>
                 ) : (
                   filteredPenilaian.map((n, idx) => (
-                    <tr key={n.NILAI_ID} className="hover:bg-slate-50">
+                    <tr key={`lap-nilai-${n.NILAI_ID}-${idx}`} className="hover:bg-slate-50">
                       <td className="py-2 px-3 border border-slate-300 font-mono text-center">{idx + 1}</td>
                       <td className="py-2 px-3 border border-slate-300 font-bold text-slate-800">{n.NAMA_MURID}</td>
                       <td className="py-2 px-3 border border-slate-300 font-semibold">{n.KELAS_ID}</td>
@@ -199,7 +199,7 @@ export const AdminLaporan: React.FC<AdminLaporanProps> = ({ onShowToast }) => {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredPresensi.map((p, idx) => (
-                  <tr key={p.PRESENSI_ID}>
+                  <tr key={`lap-pres-${p.PRESENSI_ID}-${idx}`}>
                     <td className="py-2 px-3 border border-slate-300 font-mono text-center">{idx + 1}</td>
                     <td className="py-2 px-3 border border-slate-300 font-mono">{p.TANGGAL}</td>
                     <td className="py-2 px-3 border border-slate-300 font-semibold">{p.KELAS_ID}</td>
@@ -229,7 +229,7 @@ export const AdminLaporan: React.FC<AdminLaporanProps> = ({ onShowToast }) => {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredMurids.map((m, idx) => (
-                  <tr key={m.MURID_ID}>
+                  <tr key={`lap-mrd-${m.MURID_ID}-${idx}`}>
                     <td className="py-2 px-3 border border-slate-300 font-mono text-center">{idx + 1}</td>
                     <td className="py-2 px-3 border border-slate-300 font-mono font-bold">{m.NIS}</td>
                     <td className="py-2 px-3 border border-slate-300 font-mono text-slate-600">{m.NISN}</td>
@@ -258,7 +258,7 @@ export const AdminLaporan: React.FC<AdminLaporanProps> = ({ onShowToast }) => {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {materi.map((mat, idx) => (
-                  <tr key={mat.MATERI_ID}>
+                  <tr key={`lap-mat-${mat.MATERI_ID}-${idx}`}>
                     <td className="py-2 px-3 border border-slate-300 font-mono text-center">{idx + 1}</td>
                     <td className="py-2 px-3 border border-slate-300">
                       <div className="font-bold text-slate-800">{mat.JUDUL}</div>

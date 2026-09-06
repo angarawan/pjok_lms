@@ -166,11 +166,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ currentUser,
           </div>
 
           <div className="space-y-2.5">
-            {kelas.slice(0, 5).map((k) => {
+            {kelas.slice(0, 5).map((k, idx) => {
               const count = murids.filter(m => m.KELAS_ID === k.KELAS_ID).length;
               return (
                 <div
-                  key={k.KELAS_ID}
+                  key={`teach-kelas-${k.KELAS_ID || 'k'}-${idx}`}
                   className="p-3 rounded-2xl bg-slate-50 flex items-center justify-between text-xs"
                 >
                   <div>

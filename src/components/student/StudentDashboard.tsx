@@ -122,11 +122,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
           </div>
 
           <div className="space-y-3">
-            {tugasList.slice(0, 3).map((t) => {
+            {tugasList.slice(0, 3).map((t, idx) => {
               const mySub = pengumpulanList.find(p => p.TUGAS_ID === t.TUGAS_ID);
               return (
                 <div
-                  key={t.TUGAS_ID}
+                  key={`stu-tugas-${t.TUGAS_ID || 't'}-${idx}`}
                   className="p-4 rounded-2xl border border-slate-100 bg-slate-50/70 hover:bg-slate-100/70 transition-all flex items-center justify-between gap-3"
                 >
                   <div className="space-y-1">
@@ -172,9 +172,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
           </div>
 
           <div className="space-y-3">
-            {materiList.slice(0, 3).map((m) => (
+            {materiList.slice(0, 3).map((m, idx) => (
               <div
-                key={m.MATERI_ID}
+                key={`stu-mat-${m.MATERI_ID || 'm'}-${idx}`}
                 onClick={() => onNavigate('materi')}
                 className="p-4 rounded-2xl border border-slate-100 bg-slate-50/70 hover:bg-slate-100/70 transition-all cursor-pointer flex items-center justify-between"
               >

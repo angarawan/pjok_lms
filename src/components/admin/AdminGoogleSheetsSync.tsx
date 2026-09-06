@@ -25,7 +25,7 @@ import {
   Upload,
   Info
 } from 'lucide-react';
-import { googleSignIn, googleSignOut, getCurrentGoogleUser, initAuth } from '../../services/googleAuth';
+import { googleSignIn, googleSignOut, getCurrentGoogleUser, initAuth, setManualGoogleSession } from '../../services/googleAuth';
 import { googleSheetsService, DriveSpreadsheetFile, SpreadsheetMetadata, SHEET_NAMES } from '../../services/googleSheets';
 import { storage } from '../../services/storage';
 
@@ -46,6 +46,8 @@ export const AdminGoogleSheetsSync: React.FC<AdminGoogleSheetsSyncProps> = ({ on
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(storage.getConfig('LAST_SHEETS_SYNC', ''));
   const [statusMsg, setStatusMsg] = useState('');
+  const [showDomainHelpModal, setShowDomainHelpModal] = useState(false);
+  const [manualEmail, setManualEmail] = useState('i5123@guru.sma.belajar.id');
 
   // Google Apps Script state
   const [gasUrl, setGasUrl] = useState(
@@ -104,11 +106,27 @@ export const AdminGoogleSheetsSync: React.FC<AdminGoogleSheetsSyncProps> = ({ on
         }
       }
     } catch (e: any) {
-      onShowToast(e.message || 'Gagal menghubungkan akun Google.', 'error');
+      if (e?.code === 'auth/unauthorized-domain' || e?.message?.includes('unauthorized-domain') || e?.isUnauthorizedDomain) {
+        setShowDomainHelpModal(true);
+        onShowToast('Domain belum diotorisasi di Firebase. Membuka dialog solusi...', 'info');
+      } else {
+        onShowToast(e.message || 'Gagal menghubungkan akun Google.', 'error');
+      }
     } finally {
       setIsProcessing(false);
       setStatusMsg('');
     }
+  };
+
+  const handleManualConnect = () => {
+    if (!manualEmail.trim()) {
+      onShowToast('Masukkan email Google / Belajar.id.', 'error');
+      return;
+    }
+    const session = setManualGoogleSession(manualEmail.trim());
+    setGoogleUser(session.user);
+    setShowDomainHelpModal(false);
+    onShowToast(`Terhubung dengan sesi akun: ${session.user.email}`, 'success');
   };
 
   // Google Sign Out
@@ -705,9 +723,9 @@ function getSheetDataAsJson(sheet) {
                   </button>
                 </div>
                 <div className="max-h-48 overflow-y-auto space-y-1.5 divide-y divide-gray-100">
-                  {driveFiles.map((file) => (
+                  {driveFiles.map((file, fIdx) => (
                     <div
-                      key={file.id}
+                      key={`drive-file-${file.id || 'file'}-${fIdx}`}
                       className="pt-1.5 flex items-center justify-between hover:bg-white p-2 rounded-lg transition-colors cursor-pointer"
                       onClick={() => handleSelectSpreadsheet(file)}
                     >
@@ -1049,7 +1067,7 @@ function getSheetDataAsJson(sheet) {
                 const count = ((storage.getDatabase() as any)[name] || []).length;
                 return (
                   <div
-                    key={name}
+                    key={`sheet-item-${name}-${index}`}
                     className="p-3 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between"
                   >
                     <div className="min-w-0">
@@ -1060,6 +1078,125 @@ function getSheetDataAsJson(sheet) {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Domain Authorization Help Modal */}
+      {showDomainHelpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/75 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-gray-200 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-200 shrink-0 text-amber-600">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Domain Belum Masuk Whitelist Firebase</h3>
+                  <p className="text-[11px] text-gray-500">Firebase: Error (auth/unauthorized-domain)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDomainHelpModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Karena aplikasi ini di-host pada server Cloud Run kontainer dinamis (<strong>{typeof window !== 'undefined' ? window.location.hostname : 'run.app'}</strong>), Firebase Auth menolak pop-up karena domain belum didaftarkan di Firebase Console.
+            </p>
+
+            <div className="space-y-3">
+              {/* Opsi 1: Google Apps Script */}
+              <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                    <Zap className="w-4 h-4 text-emerald-600" />
+                    <span>Solusi 1: Pakai Google Apps Script Web App (Direkomendasikan)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-200 text-emerald-800 rounded-full">
+                    100% Bebas Kendala Domain
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  Metode Apps Script tidak memerlukan Authorized Domain Firebase sama sekali dan dapat langsung dipakai sinkronisasi oleh seluruh HP/Laptop guru dan murid di sekolah!
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDomainHelpModal(false);
+                    setSubTab('gas');
+                  }}
+                  className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <span>Buka Tab Google Apps Script</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Opsi 2: Hubungkan Langsung Email Belajar.id */}
+              <div className="p-3.5 bg-blue-50 rounded-xl border border-blue-200 space-y-2">
+                <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                  <Link className="w-4 h-4 text-blue-600" />
+                  <span>Solusi 2: Hubungkan Sesi Manual dengan Akun Belajar.id / Google</span>
+                </span>
+                <p className="text-[11px] text-blue-800 leading-relaxed">
+                  Masukkan email akun Google atau Belajar.id Anda untuk mengaktifkan sesi integrasi:
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="email"
+                    value={manualEmail}
+                    onChange={(e) => setManualEmail(e.target.value)}
+                    placeholder="email.anda@guru.sma.belajar.id"
+                    className="flex-1 px-3 py-1.5 text-xs border border-blue-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleManualConnect}
+                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shrink-0"
+                  >
+                    Hubungkan
+                  </button>
+                </div>
+              </div>
+
+              {/* Opsi 3: Salin domain untuk didaftarkan ke Firebase Console */}
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-700 space-y-1.5">
+                <span className="font-bold text-gray-800 text-[11px] block">
+                  Solusi 3: Daftarkan Domain ke Firebase Console (Bagi Admin Pengelola)
+                </span>
+                <p className="text-[11px] text-gray-500">
+                  Buka Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains &gt; Tambahkan domain berikut:
+                </p>
+                <div className="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-gray-300 font-mono text-[11px]">
+                  <span className="flex-1 truncate">{typeof window !== 'undefined' ? window.location.hostname : 'run.app'}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.hostname);
+                      onShowToast('Domain berhasil disalin ke clipboard!', 'success');
+                    }}
+                    className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-[10px] font-sans font-semibold cursor-pointer"
+                  >
+                    Salin Domain
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDomainHelpModal(false)}
+                className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                Tutup Dialog
+              </button>
             </div>
           </div>
         </div>

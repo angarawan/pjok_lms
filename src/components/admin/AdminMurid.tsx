@@ -342,7 +342,7 @@ export const AdminMurid: React.FC<AdminMuridProps> = ({ onShowToast }) => {
                 </tr>
               ) : (
                 paginatedMurids.map((m, idx) => (
-                  <tr key={m.MURID_ID} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={`murid-row-${m.MURID_ID || 'm'}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3.5 px-4 font-mono text-slate-400">
                       {(currentPage - 1) * itemsPerPage + idx + 1}
                     </td>

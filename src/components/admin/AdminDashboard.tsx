@@ -309,10 +309,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           </div>
 
           <div className="p-5 space-y-3">
-            {Object.entries(classCounts).slice(0, 6).map(([kId, count]) => {
+            {Object.entries(classCounts).slice(0, 6).map(([kId, count], cIdx) => {
               const percentage = Math.min(100, Math.max(10, count * 30));
               return (
-                <div key={kId}>
+                <div key={`cls-count-${kId || 'k'}-${cIdx}`}>
                   <div className="flex justify-between text-xs font-medium mb-1">
                     <span className="text-gray-700">{kId}</span>
                     <span className="text-gray-500 font-mono">{count} Siswa</span>
@@ -398,8 +398,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           </div>
 
           <div className="p-5 space-y-3 flex-1">
-            {logs.slice(0, 5).map((log) => (
-              <div key={log.LOG_ID} className="flex items-start gap-2.5 text-xs">
+            {logs.slice(0, 5).map((log, lIdx) => (
+              <div key={`dash-log-${log.LOG_ID || 'log'}-${lIdx}`} className="flex items-start gap-2.5 text-xs">
                 <div className="w-7 h-7 rounded-md bg-gray-100 text-gray-600 flex items-center justify-center shrink-0 mt-0.5">
                   <Activity className="w-3.5 h-3.5 text-blue-600" />
                 </div>

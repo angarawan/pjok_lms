@@ -246,7 +246,7 @@ export const AdminGuru: React.FC<AdminGuruProps> = ({ onShowToast }) => {
                   const isCopied = copiedId === g.GURU_ID;
 
                   return (
-                    <tr key={g.GURU_ID} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={`guru-row-${g.GURU_ID || 'g'}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3.5 px-4 font-mono text-slate-400">{idx + 1}</td>
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-600">{g.NIP || '-'}</td>
                       <td className="py-3.5 px-4 font-bold text-slate-800">

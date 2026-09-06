@@ -186,9 +186,9 @@ export const AtpManager: React.FC<AtpManagerProps> = ({ canEdit, onShowToast }) 
             Belum ada Alur Tujuan Pembelajaran yang sesuai.
           </div>
         ) : (
-          filteredAtp.map((item) => (
+          filteredAtp.map((item, idx) => (
             <div
-              key={item.ATP_ID}
+              key={`atp-card-${item.ATP_ID || 'atp'}-${idx}`}
               className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div className="space-y-3">
